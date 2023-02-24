@@ -68,6 +68,14 @@ func (l *Lexer) readInteger() string {
 	return l.input[begin : l.pos+1]
 }
 
+func (l *Lexer) readString() string {
+	// 跳过‘”’，需要将pos+1
+	begin := l.pos + 1
+	for l.nextChar() != '"' {
+	}
+	return l.input[begin:l.pos]
+}
+
 // NextToken 读取下一个词法单元，同时指针前移
 func (l *Lexer) NextToken() *token.Token {
 	l.consumeSpaces()
@@ -111,6 +119,23 @@ func (l *Lexer) NextToken() *token.Token {
 		return token.New(token.LBRACE, "{")
 	case '}':
 		return token.New(token.RBRACE, "}")
+	case '&':
+		if l.peekChar() == '&' {
+			l.nextChar()
+			return token.New(token.AND, "&&")
+		} else {
+			return token.New(token.BIT_AND, "&")
+		}
+	case '|':
+		if l.peekChar() == '|' {
+			l.nextChar()
+			return token.New(token.OR, "||")
+		} else {
+			return token.New(token.BIT_OR, "|")
+		}
+	case '"':
+		literal := l.readString()
+		return token.New(token.STRING, literal)
 	case 0:
 		return token.New(token.EOF, "")
 	default:

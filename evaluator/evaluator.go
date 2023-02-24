@@ -25,6 +25,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		env.Set(node.Name.Value, val)
 	case *ast.IntegerLiteral:
 		return &object.Integer{Value: node.Value}
+	case *ast.StringLiteral:
+		return &object.String{Value: node.Value}
 	case *ast.Identifier:
 		value, ok := env.Get(node.Value)
 		if !ok {
@@ -172,8 +174,21 @@ func evalInfixExp(operator string, left, right object.Object) object.Object {
 		return evalIntegerInfixExp(operator, left, right)
 	case left.Type() == object.BOOLEAN_OBJ && right.Type() == object.BOOLEAN_OBJ:
 		return evalBooleanInfixExp(operator, left, right)
+	case left.Type() == object.STRING_OBJ && right.Type() == object.STRING_OBJ:
+		return evalStringInfixExp(operator, left, right)
 	default:
 		return newError("type mismatch: %s %s %s", left.Type(), operator, right.Type())
+	}
+}
+
+func evalStringInfixExp(operator string, left, right object.Object) object.Object {
+	leftVal := left.(*object.String).Value
+	rightVal := right.(*object.String).Value
+	switch operator {
+	case "+":
+		return &object.String{Value: leftVal + rightVal}
+	default:
+		return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
 	}
 }
 
@@ -185,6 +200,10 @@ func evalBooleanInfixExp(operator string, left, right object.Object) object.Obje
 		return b2b(leftVal == rightVal)
 	case "!=":
 		return b2b(leftVal != rightVal)
+	case "&&":
+		return b2b(leftVal && rightVal)
+	case "||":
+		return b2b(leftVal || rightVal)
 	default:
 		return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
 	}
@@ -210,6 +229,14 @@ func evalIntegerInfixExp(operator string, left, right object.Object) object.Obje
 		return b2b(leftVal == rightVal)
 	case "!=":
 		return b2b(leftVal != rightVal)
+	case "&&":
+		return b2b((leftVal != 0) && (rightVal != 0))
+	case "||":
+		return b2b((leftVal != 0) || (rightVal != 0))
+	case "&":
+		return &object.Integer{Value: leftVal & rightVal}
+	case "|":
+		return &object.Integer{Value: leftVal | rightVal}
 	default:
 		return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
 	}

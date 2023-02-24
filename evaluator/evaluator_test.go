@@ -41,6 +41,19 @@ func assertBoolean(t *testing.T, obj object.Object, expect bool) bool {
 	return true
 }
 
+func assertString(t *testing.T, obj object.Object, expect string) bool {
+	result, ok := obj.(*object.String)
+	if !ok {
+		t.Fatalf("obj is not *object.Boolean")
+		return false
+	}
+	if result.Value != expect {
+		t.Fatalf("obj: expect %s, found %s", expect, result.Value)
+		return false
+	}
+	return true
+}
+
 func assertNull(t *testing.T, obj object.Object) bool {
 	_, ok := obj.(*object.Null)
 	if !ok {
@@ -91,11 +104,28 @@ func TestEvalBoolean(t *testing.T) {
 		{"false == false", true},
 		{"true == false", false},
 		{"true != false", true},
+		{"true && false", false},
+		{"true || false", true},
 	}
 
 	for _, tt := range tests {
 		evaluated := testEval(tt.input)
 		if !assertBoolean(t, evaluated, tt.expect) {
+			return
+		}
+	}
+}
+
+func TestEvalString(t *testing.T) {
+	tests := []struct {
+		input  string
+		expect string
+	}{
+		{`"Hello, " + "world!"`, "Hello, world!"},
+	}
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+		if !assertString(t, evaluated, tt.expect) {
 			return
 		}
 	}

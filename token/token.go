@@ -23,8 +23,9 @@ const (
 	ILLEGAL = "ILLEGAL"
 	EOF     = "EOF"
 
-	IDENT = "IDENT"
-	INT   = "INT"
+	IDENT  = "IDENT"
+	INT    = "INT"
+	STRING = "STRING"
 
 	ASSIGN   = "="
 	PLUS     = "+"
@@ -32,11 +33,15 @@ const (
 	BANG     = "!"
 	ASTERISK = "*"
 	SLASH    = "/"
+	BIT_AND  = "&"
+	BIT_OR   = "|"
 	EQ       = "=="
 	NOT_EQ   = "!="
 
-	LT = "<"
-	GT = ">"
+	LT  = "<"
+	GT  = ">"
+	AND = "&&"
+	OR  = "||"
 
 	COMMA     = ","
 	SEMICOLON = ";"

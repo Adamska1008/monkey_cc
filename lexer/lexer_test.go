@@ -14,7 +14,8 @@ func TestNextToken(t *testing.T) {
 
 	symbols := `=+(){},;
 	!-/*5;
-	5 < 10 > 5;`
+	5 < 10 > 5;
+	"Hello, world!";`
 	symbolsExpect := []Expect{
 		{token.ASSIGN, "="},
 		{token.PLUS, "+"},
@@ -35,6 +36,8 @@ func TestNextToken(t *testing.T) {
 		{token.INT, "10"},
 		{token.GT, ">"},
 		{token.INT, "5"},
+		{token.SEMICOLON, ";"},
+		{token.STRING, "Hello, world!"},
 		{token.SEMICOLON, ";"},
 	}
 
@@ -136,12 +139,54 @@ func TestNextToken(t *testing.T) {
 		{token.RBRACE, "}"},
 	}
 
+	andOr := `
+	if (x == 4 || (x == 5 && y != 4)) {
+		return x & 3;
+	} else {
+		return y | 4;
+	}
+	`
+	andOrExpect := []Expect{
+		{token.IF, "if"},
+		{token.LPAREN, "("},
+		{token.IDENT, "x"},
+		{token.EQ, "=="},
+		{token.INT, "4"},
+		{token.OR, "||"},
+		{token.LPAREN, "("},
+		{token.IDENT, "x"},
+		{token.EQ, "=="},
+		{token.INT, "5"},
+		{token.AND, "&&"},
+		{token.IDENT, "y"},
+		{token.NOT_EQ, "!="},
+		{token.INT, "4"},
+		{token.RPAREN, ")"},
+		{token.RPAREN, ")"},
+		{token.LBRACE, "{"},
+		{token.RETURN, "return"},
+		{token.IDENT, "x"},
+		{token.BIT_AND, "&"},
+		{token.INT, "3"},
+		{token.SEMICOLON, ";"},
+		{token.RBRACE, "}"},
+		{token.ELSE, "else"},
+		{token.LBRACE, "{"},
+		{token.RETURN, "return"},
+		{token.IDENT, "y"},
+		{token.BIT_OR, "|"},
+		{token.INT, "4"},
+		{token.SEMICOLON, ";"},
+		{token.RBRACE, "}"},
+	}
+
 	tests := []struct {
 		input  string
 		expect []Expect
 	}{
 		{input: symbols, expect: symbolsExpect},
 		{input: basic, expect: basicExpect},
+		{input: andOr, expect: andOrExpect},
 	}
 
 	for i, test := range tests {
@@ -153,7 +198,8 @@ func TestNextToken(t *testing.T) {
 				log.Fatalf("token type mismatched in %d test case, %d token\n", i, j)
 			}
 			if tok.Literal != tt.expectedLiteral {
-				log.Fatalf("token literal mismatched in %d test case, %d token\n", i, j)
+				log.Fatalf("token literal mismatched in %d test case, %d token\nexpect: %s, found: %s",
+					i, j, tt.expectedLiteral, tok.Literal)
 			}
 		}
 	}

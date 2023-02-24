@@ -51,6 +51,19 @@ func assertBoolean(t *testing.T, b ast.Expression, value bool) bool {
 	return true
 }
 
+func assertString(t *testing.T, s ast.Expression, value string) bool {
+	str, ok := s.(*ast.StringLiteral)
+	if !ok {
+		t.Errorf("s is not *ast.StringLiteral")
+		return false
+	}
+	if str.Value != value {
+		t.Errorf("str.Value expect: %s, found: %s\n", value, str.Value)
+		return false
+	}
+	return true
+}
+
 // 判断表达式是identifier 类型，且值为value
 func assertIdentifier(t *testing.T, il ast.Expression, value string) bool {
 	ident, ok := il.(*ast.Identifier)
@@ -79,7 +92,14 @@ func assertLiteralExp(t *testing.T, exp ast.Expression, expect interface{}) bool
 	case bool:
 		return assertBoolean(t, exp, v)
 	case string:
-		return assertIdentifier(t, exp, v)
+		{
+			switch exp.(type) {
+			case *ast.StringLiteral:
+				return assertString(t, exp, v)
+			case *ast.Identifier:
+				return assertIdentifier(t, exp, v)
+			}
+		}
 	}
 	t.Errorf("type of exp not handled: %T", exp)
 	return false
@@ -269,6 +289,35 @@ func TestBoolean(t *testing.T) {
 	}
 }
 
+func TestStringLiteral(t *testing.T) {
+	tests := []struct {
+		input  string
+		expect string
+	}{
+		{`"Hello";`, "Hello"},
+		{"World;", "World"},
+	}
+
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+		assertNoError(t, p)
+
+		if len(program.Statements) != 1 {
+			t.Fatalf("expected %d statements: got %d", 1, len(program.Statements))
+		}
+
+		stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+
+		if !ok {
+			t.Fatalf("is not expression statement")
+		}
+
+		assertLiteralExp(t, stmt.Exp, tt.expect)
+	}
+}
+
 func TestPrefixExpression(t *testing.T) {
 	tests := []struct {
 		input    string
@@ -325,6 +374,10 @@ func TestInfixExpression(t *testing.T) {
 		{"5 < 5;", 5, "<", 5},
 		{"5 == 5;", 5, "==", 5},
 		{"5 != 5;", 5, "!=", 5},
+		{"4 & 3", 4, "&", 3},
+		{"4 | 3", 4, "|", 3},
+		{"4 && 3", 4, "&&", 3},
+		{"6 || 7", 6, "||", 7},
 	}
 	for _, tt := range tests {
 		l := lexer.New(tt.input)

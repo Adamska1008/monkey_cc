@@ -17,6 +17,10 @@ type (
 const (
 	_ int = iota
 	LOWEST
+	OR
+	AND
+	BIT_OR
+	BIT_AND
 	EQUALS
 	LESSGREATER
 	SUM
@@ -26,6 +30,10 @@ const (
 )
 
 var precedences = map[token.TokenType]int{
+	token.AND:      AND,
+	token.OR:       OR,
+	token.BIT_AND:  BIT_AND,
+	token.BIT_OR:   BIT_OR,
 	token.EQ:       EQUALS,
 	token.NOT_EQ:   EQUALS,
 	token.LT:       LESSGREATER,
@@ -61,6 +69,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.INT, p.ParseInt)
 	p.registerPrefix(token.TRUE, p.ParseBoolean)
 	p.registerPrefix(token.FALSE, p.ParseBoolean)
+	p.registerPrefix(token.STRING, p.ParseString)
 	p.registerPrefix(token.MINUS, p.ParsePrefixExpression)
 	p.registerPrefix(token.BANG, p.ParsePrefixExpression)
 	p.registerPrefix(token.LPAREN, p.ParseGroupedExp)
@@ -75,6 +84,10 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.NOT_EQ, p.ParseInfixExpression)
 	p.registerInfix(token.LT, p.ParseInfixExpression)
 	p.registerInfix(token.GT, p.ParseInfixExpression)
+	p.registerInfix(token.AND, p.ParseInfixExpression)
+	p.registerInfix(token.OR, p.ParseInfixExpression)
+	p.registerInfix(token.BIT_AND, p.ParseInfixExpression)
+	p.registerInfix(token.BIT_OR, p.ParseInfixExpression)
 	p.registerInfix(token.LPAREN, p.ParseCallExp)
 
 	return p
@@ -212,9 +225,7 @@ func (p *Parser) ParseProgram() *ast.Program {
 	}
 	for p.peekToken().Type != token.EOF {
 		stmt := p.ParseStmt()
-		if stmt != nil {
-			program.Statements = append(program.Statements, stmt)
-		}
+		program.Statements = append(program.Statements, stmt)
 	}
 	return program
 }
@@ -281,9 +292,7 @@ func (p *Parser) ParseBlockStmt() *ast.BlockStatement {
 
 	for p.peekToken().Type != token.RBRACE && p.peekToken().Type != token.EOF {
 		stmt := p.ParseStmt()
-		if stmt != nil {
-			block.Statements = append(block.Statements, stmt)
-		}
+		block.Statements = append(block.Statements, stmt)
 	}
 	if p.peekToken().Type == token.RBRACE {
 		p.nextToken()
@@ -367,6 +376,14 @@ func (p *Parser) ParseBoolean() ast.Expression {
 		Value: p.nextToken().Type == token.TRUE,
 	}
 	return boolean
+}
+
+func (p *Parser) ParseString() ast.Expression {
+	str := &ast.StringLiteral{
+		Token: *p.peekToken(),
+		Value: p.nextToken().Literal,
+	}
+	return str
 }
 
 func (p *Parser) ParseGroupedExp() ast.Expression {
