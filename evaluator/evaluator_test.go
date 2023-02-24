@@ -11,7 +11,8 @@ func testEval(input string) object.Object {
 	l := lexer.New(input)
 	p := parser.New(l)
 	program := p.ParseProgram()
-	return Eval(program)
+	env := object.NewEnvironment()
+	return Eval(program, env)
 }
 
 func assertInteger(t *testing.T, obj object.Object, expect int64) bool {
@@ -184,10 +185,56 @@ func TestErrorHandling(t *testing.T) {
 		evaluated := testEval(tt.input)
 		errObj, ok := evaluated.(*object.Error)
 		if !ok {
-			t.Fatalf("tests %d:\nevaluated is not *object.Error", i)
+			t.Fatalf("evaluated is not *object.Error")
 		}
 		if errObj.Message != tt.expectedMessage {
 			t.Fatalf("tests %d:\nexpect error message:\n%s\nfound:\n%s\n", i, tt.expectedMessage, errObj.Message)
 		}
+	}
+}
+
+func TestLetStmt(t *testing.T) {
+	tests := []struct {
+		input  string
+		expect int64
+	}{
+		{"let a = 5; a;", 5},
+		{"let a = 5 * 5; a;", 25},
+		{"let a = 5; let b = a; b;", 5},
+		{"let a = 5; let b = a; let c = a + b + 5; c;", 15},
+	}
+
+	for _, tt := range tests {
+		assertInteger(t, testEval(tt.input), tt.expect)
+	}
+}
+
+func TestFunction(t *testing.T) {
+	input := `fn(x) { x + 2; }`
+	evaluated := testEval(input)
+	fn, ok := evaluated.(*object.Function)
+	if !ok {
+		t.Fatalf("evaluated is not *object.Funtion")
+	}
+	if len(fn.Parameters) != 1 {
+		t.Fatalf("expect len(fn.Parameters): %d, found: %d\n", 1, len(fn.Parameters))
+	}
+	if fn.Parameters[0].Value != "x" {
+		t.Fatalf("expect fn.Parameters[0].Value: %s, found: %s", "x", fn.Parameters[0].Value)
+	}
+	if fn.Body.String() != "{(x + 2);}" {
+		t.Fatalf("expect fn.Body.String(): %s, found: %s", "{(x + 2);}", fn.Body.String())
+	}
+}
+
+func TestFunctionApplication(t *testing.T) {
+	tests := []struct {
+		input  string
+		expect int64
+	}{
+		{"let identity = fn(x) { x; }; identity(5);", 5},
+	}
+	for _, tt := range tests {
+		assertInteger(t, testEval(tt.input), tt.expect)
 	}
 }
