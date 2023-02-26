@@ -318,6 +318,26 @@ func TestStringLiteral(t *testing.T) {
 	}
 }
 
+func TestArrayLiteral(t *testing.T) {
+	input := `[1, 2 * 2, 3 + 3]    `
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	assertNoError(t, p)
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	array, ok := stmt.Exp.(*ast.ArrayLiteral)
+	if !ok {
+		t.Fatalf("stmt.Exp is not *ast.ArrayLiteral")
+	}
+	if len(array.Elements) != 3 {
+		t.Fatalf("expect len(array.Elements) to be %d, found %d", 3, len(array.Elements))
+	}
+	assertIntValue(t, array.Elements[0], 1)
+	assertInfixExp(t, array.Elements[1], 2, "*", 2)
+	assertInfixExp(t, array.Elements[2], 3, "+", 3)
+}
+
 func TestPrefixExpression(t *testing.T) {
 	tests := []struct {
 		input    string
@@ -576,6 +596,29 @@ func TestCallExpression(t *testing.T) {
 	assertInfixExp(t, exp.Arguments[2], 4, "*", 5)
 }
 
+func TestIndexExpression(t *testing.T) {
+	input := "arr[1 + 1];"
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	assertNoError(t, p)
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	indexExp, ok := stmt.Exp.(*ast.IndexExpression)
+
+	if !ok {
+		t.Fatalf("stmt.Exp is not *ast.IndexExpression")
+	}
+
+	if !assertIdentifier(t, indexExp.Left, "arr") {
+		return
+	}
+
+	if !assertInfixExp(t, indexExp.Index, 1, "+", 1) {
+		return
+	}
+}
+
 func TestOperatorPrecedenceParsing(t *testing.T) {
 	tests := []struct {
 		input  string
@@ -590,6 +633,7 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		{"3 > 5 == false;", "((3 > 5) == false);"},
 		{"1 + (2 + 3) + 4;", "((1 + (2 + 3)) + 4);"},
 		{"2 / (5 + 5);", "(2 / (5 + 5));"},
+		{"a * b[2]", "(a * (b[2]));"},
 	}
 
 	for i, tt := range tests {

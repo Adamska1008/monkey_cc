@@ -119,6 +119,10 @@ func (l *Lexer) NextToken() *token.Token {
 		return token.New(token.LBRACE, "{")
 	case '}':
 		return token.New(token.RBRACE, "}")
+	case '[':
+		return token.New(token.LBRACKET, "[")
+	case ']':
+		return token.New(token.RBRACKET, "]")
 	case '&':
 		if l.peekChar() == '&' {
 			l.nextChar()

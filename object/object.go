@@ -15,6 +15,8 @@ const (
 	RETURN_VALUE_OBJ = "RETURN_VALUE"
 	ERROR_OBJ        = "ERROR"
 	FUNCTION_OBJ     = "FUNCTION"
+	BUILTIN_OBJ      = "BUILTIN"
+	ARRAY_OBJ        = "ARRAY"
 )
 
 var (
@@ -24,6 +26,8 @@ var (
 )
 
 type ObjectType string
+
+type BuiltInFn func(args ...Object) Object
 
 type Object interface {
 	Type() ObjectType
@@ -119,6 +123,41 @@ func (f *Function) Inspect() string {
 	out.WriteString(strings.Join(params, ", "))
 	out.WriteString(")")
 	out.WriteString(f.Body.String())
+
+	return out.String()
+}
+
+type BuiltIn struct {
+	Fn BuiltInFn
+}
+
+func (bI *BuiltIn) Type() ObjectType {
+	return BUILTIN_OBJ
+}
+
+func (bI *BuiltIn) Inspect() string {
+	return "built in function"
+}
+
+type Array struct {
+	Elements []Object
+}
+
+func (a *Array) Type() ObjectType {
+	return ARRAY_OBJ
+}
+
+func (a *Array) Inspect() string {
+	var out bytes.Buffer
+	var elements []string
+
+	for _, e := range a.Elements {
+		elements = append(elements, e.Inspect())
+	}
+
+	out.WriteString("[")
+	out.WriteString(strings.Join(elements, ", "))
+	out.WriteString("]")
 
 	return out.String()
 }

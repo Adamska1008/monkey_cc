@@ -27,6 +27,7 @@ const (
 	PRODUCT
 	PREFIX
 	CALL
+	INDEX
 )
 
 var precedences = map[token.TokenType]int{
@@ -43,6 +44,7 @@ var precedences = map[token.TokenType]int{
 	token.SLASH:    PRODUCT,
 	token.ASTERISK: PRODUCT,
 	token.LPAREN:   CALL,
+	token.LBRACKET: INDEX,
 }
 
 type Parser struct {
@@ -54,6 +56,8 @@ type Parser struct {
 	infixParseFns  map[token.TokenType]infixParseFn
 }
 
+// New 初始化Parser
+// 注册解析函数
 func New(l *lexer.Lexer) *Parser {
 	p := &Parser{
 		l:              l,
@@ -75,6 +79,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.LPAREN, p.ParseGroupedExp)
 	p.registerPrefix(token.IF, p.ParseIfExp)
 	p.registerPrefix(token.FUNCTION, p.ParseFnLiteral)
+	p.registerPrefix(token.LBRACKET, p.ParseArrayLiteral)
 
 	p.registerInfix(token.PLUS, p.ParseInfixExpression)
 	p.registerInfix(token.MINUS, p.ParseInfixExpression)
@@ -89,6 +94,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.BIT_AND, p.ParseInfixExpression)
 	p.registerInfix(token.BIT_OR, p.ParseInfixExpression)
 	p.registerInfix(token.LPAREN, p.ParseCallExp)
+	p.registerInfix(token.LBRACKET, p.ParseIndexExpression)
 
 	return p
 }
@@ -179,17 +185,42 @@ func (p *Parser) parseCallArguments() []ast.Expression {
 	return args
 }
 
+// 相较于前者，该方法解析形如"[...]"的列表，可以考虑将两个方法合并
+func (p *Parser) parseExpressionList(end token.TokenType) []ast.Expression {
+	var args []ast.Expression
+
+	p.nextToken()
+	if p.peekToken().Type == token.RPAREN {
+		p.nextToken()
+		return args
+	}
+
+	args = append(args, p.ParseExp(LOWEST))
+	for p.peekToken().Type == token.COMMA {
+		p.nextToken()
+		args = append(args, p.ParseExp(LOWEST))
+	}
+
+	if !p.expectPeekType(end) {
+		return nil
+	}
+	p.nextToken()
+	return args
+}
+
 // 当期待token与peekToken不一致时，产生该error
 func (p *Parser) expectTokenError(expect token.TokenType) {
 	msg := fmt.Sprintf("expected next token to be %s, found %s", expect, p.peekToken().Type)
 	p.errors = append(p.errors, msg)
 }
 
+// 当当前token不是int时，产生该error
 func (p *Parser) parseIntError(s string) {
 	msg := fmt.Sprintf("could not parse %s as integer", s)
 	p.errors = append(p.errors, msg)
 }
 
+// 当前token不存在prefix方法时，产生该error
 func (p *Parser) noPrefixParseFnError(t token.TokenType) {
 	msg := fmt.Sprintf("no prefix parse function for %s found", t)
 	p.errors = append(p.errors, msg)
@@ -441,6 +472,26 @@ func (p *Parser) ParseCallExp(function ast.Expression) ast.Expression {
 		Token:    *p.peekToken(), // "("
 		Function: function,
 	}
-	exp.Arguments = p.parseCallArguments()
+	exp.Arguments = p.parseExpressionList(token.RPAREN)
+	return exp
+}
+
+func (p *Parser) ParseArrayLiteral() ast.Expression {
+	array := &ast.ArrayLiteral{Token: *p.peekToken()} // "["
+	array.Elements = p.parseExpressionList(token.RBRACKET)
+	return array
+}
+
+func (p *Parser) ParseIndexExpression(left ast.Expression) ast.Expression {
+	exp := &ast.IndexExpression{
+		Token: *p.peekToken(), // "["
+		Left:  left,
+	}
+	p.nextToken()
+	exp.Index = p.ParseExp(LOWEST)
+	if !p.expectPeekType(token.RBRACKET) {
+		return nil
+	}
+	p.nextToken()
 	return exp
 }

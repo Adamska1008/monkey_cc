@@ -131,6 +131,28 @@ func TestEvalString(t *testing.T) {
 	}
 }
 
+func TestEvalArray(t *testing.T) {
+	input := "[1, 2 * 2, 3 + 3];"
+	evaluated := testEval(input)
+	result, _ := evaluated.(*object.Array)
+
+	if len(result.Elements) != 3 {
+		t.Fatalf("expect len(result.Elements) to be %d, found %d", 3, len(result.Elements))
+	}
+
+	assertInteger(t, result.Elements[0], 1)
+	assertInteger(t, result.Elements[1], 4)
+	assertInteger(t, result.Elements[2], 6)
+}
+
+func TestIndexExpression(t *testing.T) {
+	input := "let arr = [1, 2, 3, 4]; arr[2];"
+	evaluated := testEval(input)
+	result, _ := evaluated.(*object.Integer)
+
+	assertInteger(t, result, 3)
+}
+
 func TestBangOperator(t *testing.T) {
 	tests := []struct {
 		input  string
@@ -266,5 +288,20 @@ func TestFunctionApplication(t *testing.T) {
 	}
 	for _, tt := range tests {
 		assertInteger(t, testEval(tt.input), tt.expect)
+	}
+}
+
+func TestBuiltInFunction(t *testing.T) {
+	tests := []struct {
+		input  string
+		expect int64
+	}{
+		{`len("")`, 0},
+		{`len("hello world")`, 11},
+	}
+
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+		assertInteger(t, evaluated, tt.expect)
 	}
 }
