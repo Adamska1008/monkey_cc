@@ -338,6 +338,27 @@ func TestArrayLiteral(t *testing.T) {
 	assertInfixExp(t, array.Elements[2], 3, "+", 3)
 }
 
+func TestHashLiteral(t *testing.T) {
+	input := `{"foo": "bar"};`
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	assertNoError(t, p)
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	hash, ok := stmt.Exp.(*ast.HashLiteral)
+
+	if !ok {
+		t.Fatalf("stmt.Exp is not *ast.HashLiteral")
+	}
+	if len(hash.Pairs) != 1 {
+		t.Fatalf("expect len(hash.Pairs) to be %d, found %d", 3, len(hash.Pairs))
+	}
+	for k, v := range hash.Pairs {
+		assertString(t, k, "foo")
+		assertString(t, v, "bar")
+	}
+}
+
 func TestPrefixExpression(t *testing.T) {
 	tests := []struct {
 		input    string

@@ -145,12 +145,38 @@ func TestEvalArray(t *testing.T) {
 	assertInteger(t, result.Elements[2], 6)
 }
 
+func TestEvalHash(t *testing.T) {
+	input := `{"one": 1 + 9, 4: 4}`
+	evaluated := testEval(input)
+	result, ok := evaluated.(*object.Hash)
+	if !ok {
+		t.Fatalf("evaluated is not *object.Hash")
+	}
+	for _, v := range result.Pairs {
+		switch v.Key.Type() {
+		case object.STRING_OBJ:
+			assertString(t, v.Key, "one")
+			assertInteger(t, v.Value, 10)
+		case object.INTEGER_OBJ:
+			assertInteger(t, v.Key, 4)
+			assertInteger(t, v.Value, 4)
+		}
+	}
+}
+
 func TestIndexExpression(t *testing.T) {
-	input := "let arr = [1, 2, 3, 4]; arr[2];"
+	input := `let arr = [1, 2, 3, 4]; arr[2];`
 	evaluated := testEval(input)
 	result, _ := evaluated.(*object.Integer)
 
 	assertInteger(t, result, 3)
+}
+
+func TestHashIndexExpression(t *testing.T) {
+	input := `let hash = {"hello": "world"}; hash["hello"]`
+	evaluated := testEval(input)
+	result, _ := evaluated.(*object.String)
+	assertString(t, result, "world")
 }
 
 func TestBangOperator(t *testing.T) {

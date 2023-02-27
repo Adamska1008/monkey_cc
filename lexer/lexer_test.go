@@ -16,7 +16,8 @@ func TestNextToken(t *testing.T) {
 	!-/*5;
 	5 < 10 > 5;
 	"Hello, world!";
-	[1, 2];`
+	[1, 2];
+	{"foo": "bar"};`
 	symbolsExpect := []Expect{
 		{token.ASSIGN, "="},
 		{token.PLUS, "+"},
@@ -45,6 +46,12 @@ func TestNextToken(t *testing.T) {
 		{token.COMMA, ","},
 		{token.INT, "2"},
 		{token.RBRACKET, "]"},
+		{token.SEMICOLON, ";"},
+		{token.LBRACE, "{"},
+		{token.STRING, "foo"},
+		{token.COLON, ":"},
+		{token.STRING, "bar"},
+		{token.RBRACE, "}"},
 		{token.SEMICOLON, ";"},
 	}
 

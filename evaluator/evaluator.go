@@ -79,6 +79,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return index
 		}
 		return evalInfixExp("[", left, index)
+	case *ast.HashLiteral:
+		return evalHashLiteral(node, env)
 	}
 	return nil
 }
@@ -201,6 +203,8 @@ func evalInfixExp(operator string, left, right object.Object) object.Object {
 		return evalStringInfixExp(operator, left, right)
 	case left.Type() == object.ARRAY_OBJ && right.Type() == object.INTEGER_OBJ:
 		return evalIndexExp(left, right)
+	case left.Type() == object.HASH_OBJ:
+		return evalHashIndexExp(left, right)
 	default:
 		return newError("type mismatch: %s %s %s", left.Type(), operator, right.Type())
 	}
@@ -276,6 +280,22 @@ func evalIndexExp(left, index object.Object) object.Object {
 	return leftVal[indexVal]
 }
 
+func evalHashIndexExp(hash, index object.Object) object.Object {
+	hashObj := hash.(*object.Hash)
+
+	key, ok := index.(object.Hashable)
+	if !ok {
+		return newError("unusable as hash key: %s", index.Type())
+	}
+
+	pair, ok := hashObj.Pairs[key.HashKey()]
+	if !ok {
+		return object.NULL
+	}
+
+	return pair.Value
+}
+
 func evalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Object {
 	condition := Eval(ie.Condition, env)
 	if isError(condition) {
@@ -319,6 +339,7 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 	}
 }
 
+// 返回闭包中使用的扩展环境
 func extendFunctionEnv(fn *object.Function, args []object.Object) *object.Environment {
 	env := object.NewEnclosedEnvironment(fn.Env)
 	for idx, param := range fn.Parameters {
@@ -332,4 +353,26 @@ func unwrapReturnValue(obj object.Object) object.Object {
 		return obj.Value
 	}
 	return obj
+}
+
+func evalHashLiteral(node *ast.HashLiteral, env *object.Environment) object.Object {
+	pairs := make(map[object.HashKey]object.HashPair)
+
+	for keyNode, valueNode := range node.Pairs {
+		key := Eval(keyNode, env)
+		if isError(key) {
+			return key
+		}
+		hashKey, ok := key.(object.Hashable)
+		if !ok {
+			return newError("unusable as hash key: %s", key.Type())
+		}
+		value := Eval(valueNode, env)
+		if isError(value) {
+			return value
+		}
+		hashed := hashKey.HashKey()
+		pairs[hashed] = object.HashPair{Key: key, Value: value}
+	}
+	return &object.Hash{Pairs: pairs}
 }
