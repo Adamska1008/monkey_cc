@@ -1,6 +1,7 @@
 package code
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 )
@@ -8,7 +9,29 @@ import (
 type Instructions []byte
 
 func (ins Instructions) String() string {
-	return ""
+	var out bytes.Buffer
+
+	i := 0
+	for i < len(ins) {
+		def, err := Lookup(ins[i])
+		if err != nil {
+			fmt.Fprintf(&out, "ERROR: %s\n", err)
+			return out.String()
+		}
+		operands, width := ReadOperands(def, ins[i+1:])
+		fmt.Fprintf(&out, "%04d %s\n", i, ins.fmt(def, operands))
+		i += 1 + width
+	}
+	return out.String()
+}
+
+// 将单个指令转化为字符串
+func (ins Instructions) fmt(def *Definition, operands []int) string {
+	switch len(def.OperandWidths) {
+	case 1:
+		return fmt.Sprintf("%s %d", def.Name, operands[0])
+	}
+	return fmt.Sprintf("ERROR: unmatched operand numbers for %s to be %d", def.Name, len(def.OperandWidths))
 }
 
 type Opcode byte
@@ -62,4 +85,19 @@ func Lookup(op byte) (*Definition, error) {
 		return nil, fmt.Errorf("opcode %d undefined", op)
 	}
 	return def, nil
+}
+
+// 读取操作数
+// 返回值为(操作数数组，总字节长度)
+func ReadOperands(def *Definition, ins Instructions) ([]int, int) {
+	operands := make([]int, len(def.OperandWidths))
+	offset := 0
+	for i, width := range def.OperandWidths {
+		switch width {
+		case 2:
+			operands[i] = int(binary.BigEndian.Uint16(ins[offset:]))
+		}
+		offset += width
+	}
+	return operands, offset
 }
