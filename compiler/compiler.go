@@ -1,6 +1,7 @@
 package compiler
 
 import (
+	"fmt"
 	"monkey_cc/ast"
 	"monkey_cc/code"
 	"monkey_cc/object"
@@ -40,6 +41,12 @@ func (c *Compiler) Compile(node ast.Node) error {
 		err = c.Compile(node.Right)
 		if err != nil {
 			return err
+		}
+		switch node.Operator {
+		case "+":
+			c.emitOp(code.OpAdd)
+		default:
+			return fmt.Errorf("unknown operator %s", node.Operator)
 		}
 	case *ast.IntegerLiteral: // 对于整型常量值，转化为*object.Integer并保存在常量池中
 		integer := &object.Integer{Value: node.Value}

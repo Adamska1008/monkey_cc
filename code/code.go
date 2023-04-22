@@ -28,6 +28,8 @@ func (ins Instructions) String() string {
 // 将单个指令转化为字符串
 func (ins Instructions) fmt(def *Definition, operands []int) string {
 	switch len(def.OperandWidths) {
+	case 0:
+		return def.Name
 	case 1:
 		return fmt.Sprintf("%s %d", def.Name, operands[0])
 	}
@@ -38,6 +40,7 @@ type Opcode byte
 
 const (
 	OpConstant Opcode = iota
+	OpAdd
 )
 
 type Definition struct {
@@ -75,6 +78,7 @@ func Make(op Opcode, operands ...int) []byte {
 
 var definitions = map[Opcode]*Definition{
 	OpConstant: {"OpConstant", []int{2}}, // 常量操作码，操作数表示常量在常量池中的位置
+	OpAdd:      {"OpAdd", []int{}},       // 加法操作码，将栈顶两个元素取出，相加并将结果压栈
 }
 
 // 查找对应操作码的定义
