@@ -67,7 +67,7 @@ func runTests(t *testing.T, tests []vmTest) {
 		if err != nil {
 			t.Fatalf(VM_ERROR, err)
 		}
-		testObject(t, tt.expected, vm.StackTop())
+		testObject(t, tt.expected, vm.LastPopped())
 	}
 }
 

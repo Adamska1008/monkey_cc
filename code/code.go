@@ -39,8 +39,12 @@ func (ins Instructions) fmt(def *Definition, operands []int) string {
 type Opcode byte
 
 const (
-	OpConstant Opcode = iota
-	OpAdd
+	OpConstant Opcode = iota // 常量操作码，操作数表示常量在常量池中的位置
+	OpAdd                    // 加法操作码，将栈顶两个元素取出，相加并将结果压栈
+	OpSub
+	OpMul
+	OpDiv
+	OpPop // 用于在一个表达式语句之后清空栈
 )
 
 type Definition struct {
@@ -77,8 +81,12 @@ func Make(op Opcode, operands ...int) []byte {
 }
 
 var definitions = map[Opcode]*Definition{
-	OpConstant: {"OpConstant", []int{2}}, // 常量操作码，操作数表示常量在常量池中的位置
-	OpAdd:      {"OpAdd", []int{}},       // 加法操作码，将栈顶两个元素取出，相加并将结果压栈
+	OpConstant: {"OpConstant", []int{2}},
+	OpAdd:      {"OpAdd", []int{}},
+	OpSub:      {"OpSub", []int{}},
+	OpMul:      {"OpMul", []int{}},
+	OpDiv:      {"OpDiv", []int{}},
+	OpPop:      {"OpPop", []int{}},
 }
 
 // 查找对应操作码的定义

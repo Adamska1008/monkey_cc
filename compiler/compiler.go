@@ -33,6 +33,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if err != nil {
 			return err
 		}
+		c.emitOp(code.OpPop)
 	case *ast.InfixExpression:
 		err := c.Compile(node.Left)
 		if err != nil {
@@ -45,6 +46,12 @@ func (c *Compiler) Compile(node ast.Node) error {
 		switch node.Operator {
 		case "+":
 			c.emitOp(code.OpAdd)
+		case "-":
+			c.emitOp(code.OpSub)
+		case "*":
+			c.emitOp(code.OpMul)
+		case "/":
+			c.emitOp(code.OpDiv)
 		default:
 			return fmt.Errorf("unknown operator %s", node.Operator)
 		}
@@ -61,7 +68,7 @@ func (c *Compiler) pushConstant(obj object.Object) int {
 	return len(c.constants) - 1
 }
 
-// 添加操作
+// 添加操作，返回指令在指令流中的地址
 func (c *Compiler) emitOp(op code.Opcode, oprands ...int) int {
 	ins := code.Make(op, oprands...)
 	pos := c.addIns(ins)
