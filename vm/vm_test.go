@@ -36,6 +36,17 @@ func testIntegerObject(val object.Object, expected int64) error {
 	return nil
 }
 
+func testBooleanObject(val object.Object, expected bool) error {
+	result, ok := val.(*object.Boolean)
+	if !ok {
+		return fmt.Errorf(NOT_EXPECTED, "val.(type)", "*object.Boolean", val.Type())
+	}
+	if result.Value != expected {
+		return fmt.Errorf(NOT_EXPECTED, "result.Value", expected, result.Value)
+	}
+	return nil
+}
+
 func testObject(t *testing.T, expected interface{}, val object.Object) {
 	t.Helper()
 	switch expected := expected.(type) {
@@ -43,6 +54,11 @@ func testObject(t *testing.T, expected interface{}, val object.Object) {
 		err := testIntegerObject(val, int64(expected))
 		if err != nil {
 			t.Errorf("testIntegerObject failed: %s", err)
+		}
+	case bool:
+		err := testBooleanObject(val, bool(expected))
+		if err != nil {
+			t.Errorf("testBooleanObject failed: %s", err)
 		}
 	}
 }
@@ -76,6 +92,28 @@ func TestIntegerArithmetic(t *testing.T) {
 		{"1", 1},
 		{"2", 2},
 		{"1 + 2", 3},
+		{"-1", -1},
+	}
+	runTests(t, tests)
+}
+
+func TestBooleanExp(t *testing.T) {
+	tests := []vmTest{
+		{"true", true},
+		{"false", false},
+		{"1 < 2", true},
+		{"1 > 2", false},
+		{"1 < 1", false},
+		{"1 > 1", false},
+		{"1 == 1", true},
+		{"1 != 1", false},
+		{"1 == 2", false},
+		{"1 != 2", true},
+		{"true == true", true},
+		{"true == false", false},
+		{"(1 < 2) == true", true},
+		{"!true", false},
+		{"!false", true},
 	}
 	runTests(t, tests)
 }

@@ -44,7 +44,14 @@ const (
 	OpSub
 	OpMul
 	OpDiv
-	OpPop // 用于在一个表达式语句之后清空栈
+	OpPop      // 用于在一个表达式语句之后清空栈
+	OpTrue     // 用于将一个true压栈
+	OpFalse    // 用于将一个false压栈
+	OpEqual    // 用于比较栈顶两个元素是否相等，将结果压栈
+	OpNotEqual // 用于比较栈顶两个元素是否不等，将结果压栈
+	OpLess     // 用于比较栈顶两个元素中，左值是否小于右值，将结果压栈
+	OpMinus    // 用于栈顶元素取反
+	OpBang     // 用于栈顶元素取非
 )
 
 type Definition struct {
@@ -87,6 +94,13 @@ var definitions = map[Opcode]*Definition{
 	OpMul:      {"OpMul", []int{}},
 	OpDiv:      {"OpDiv", []int{}},
 	OpPop:      {"OpPop", []int{}},
+	OpTrue:     {"OpTrue", []int{}},
+	OpFalse:    {"OpFalse", []int{}},
+	OpEqual:    {"OpEqual", []int{}},
+	OpNotEqual: {"OpNotEqual", []int{}},
+	OpLess:     {"OpLess", []int{}},
+	OpMinus:    {"OpMinus", []int{}},
+	OpBang:     {"OpBang", []int{}},
 }
 
 // 查找对应操作码的定义

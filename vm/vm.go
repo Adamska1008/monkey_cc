@@ -10,6 +10,11 @@ import (
 
 const StackSize = 2048
 
+var (
+	True  = object.TRUE
+	False = object.FALSE
+)
+
 // 栈式虚拟机，包含三个核心部分：常量、指令、栈
 type VM struct {
 	constants    []object.Object
@@ -66,8 +71,30 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
+		case code.OpBang:
+			if err := vm.executeBangOperator(op); err != nil {
+				return err
+			}
+		case code.OpMinus:
+			if err := vm.executeMinusOperator(op); err != nil {
+				return err
+			}
 		case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv:
 			if err := vm.executeBinaryOperator(op); err != nil {
+				return err
+			}
+		case code.OpEqual, code.OpNotEqual, code.OpLess:
+			if err := vm.executeComparison(op); err != nil {
+				return err
+			}
+		case code.OpTrue:
+			err := vm.push(True)
+			if err != nil {
+				return err
+			}
+		case code.OpFalse:
+			err := vm.push(False)
+			if err != nil {
 				return err
 			}
 		case code.OpPop:
@@ -81,12 +108,12 @@ func (vm *VM) executeBinaryOperator(op code.Opcode) error {
 	right := vm.pop()
 	left := vm.pop()
 	if left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ {
-		return vm.excuteBinaryIntegerOperator(op, left, right)
+		return vm.executeBinaryIntegerOperator(op, left, right)
 	}
 	return fmt.Errorf("unsupported types for binary operation: %s %s", left.Type(), right.Type())
 }
 
-func (vm *VM) excuteBinaryIntegerOperator(op code.Opcode, left, right object.Object) error {
+func (vm *VM) executeBinaryIntegerOperator(op code.Opcode, left, right object.Object) error {
 	leftValue := left.(*object.Integer).Value
 	rightValue := right.(*object.Integer).Value
 	var result int64
@@ -103,4 +130,71 @@ func (vm *VM) excuteBinaryIntegerOperator(op code.Opcode, left, right object.Obj
 	}
 
 	return vm.push(&object.Integer{Value: result})
+}
+
+func (vm *VM) executeComparison(op code.Opcode) error {
+	right := vm.pop()
+	left := vm.pop()
+	if left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ {
+		return vm.executeIntegerComparison(op, left, right)
+	} else if left.Type() == object.BOOLEAN_OBJ && right.Type() == object.BOOLEAN_OBJ {
+		return vm.executeBooleanComparison(op, left, right)
+	}
+	return fmt.Errorf("unknown operator: %d (%s %s)", op, left.Type(), right.Type())
+}
+
+func (vm *VM) executeIntegerComparison(op code.Opcode, left, right object.Object) error {
+	leftValue := left.(*object.Integer).Value
+	rightValue := right.(*object.Integer).Value
+	var result bool
+	switch op {
+	case code.OpEqual:
+		result = leftValue == rightValue
+	case code.OpNotEqual:
+		result = leftValue != rightValue
+	case code.OpLess:
+		result = leftValue < rightValue
+	default:
+		return fmt.Errorf("unknown operator: %d (%s %s)", op, left.Type(), right.Type())
+	}
+	vm.push(&object.Boolean{Value: result})
+	return nil
+}
+
+func (vm *VM) executeBooleanComparison(op code.Opcode, left, right object.Object) error {
+	leftValue := left.(*object.Boolean).Value
+	rightValue := right.(*object.Boolean).Value
+	var result bool
+	switch op {
+	case code.OpEqual:
+		result = leftValue == rightValue
+	case code.OpNotEqual:
+		result = leftValue != rightValue
+	default:
+		return fmt.Errorf("unknown operator: %d (%s %s)", op, left.Type(), right.Type())
+	}
+	vm.push(&object.Boolean{Value: result})
+	return nil
+}
+
+func (vm *VM) executeBangOperator(op code.Opcode) error {
+	operand := vm.pop()
+	switch operand {
+	case True:
+		return vm.push(False)
+	case False:
+		return vm.push(True)
+	default:
+		return vm.push(False)
+	}
+}
+
+func (vm *VM) executeMinusOperator(op code.Opcode) error {
+	operand := vm.pop()
+	switch operand := operand.(type) {
+	case *object.Integer:
+		return vm.push(&object.Integer{Value: -operand.Value})
+	default:
+		return fmt.Errorf("unknown operator: %d (%s)", op, operand.Type())
+	}
 }

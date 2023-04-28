@@ -35,6 +35,18 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 		c.emitOp(code.OpPop)
 	case *ast.InfixExpression:
+		if node.Operator == ">" {
+			err := c.Compile(node.Right)
+			if err != nil {
+				return err
+			}
+			err = c.Compile(node.Left)
+			if err != nil {
+				return err
+			}
+			c.emitOp(code.OpLess)
+			return nil
+		}
 		err := c.Compile(node.Left)
 		if err != nil {
 			return err
@@ -52,12 +64,37 @@ func (c *Compiler) Compile(node ast.Node) error {
 			c.emitOp(code.OpMul)
 		case "/":
 			c.emitOp(code.OpDiv)
+		case "<":
+			c.emitOp(code.OpLess)
+		case "==":
+			c.emitOp(code.OpEqual)
+		case "!=":
+			c.emitOp(code.OpNotEqual)
+		default:
+			return fmt.Errorf("unknown operator %s", node.Operator)
+		}
+	case *ast.PrefixExpression:
+		err := c.Compile(node.Right)
+		if err != nil {
+			return nil
+		}
+		switch node.Operator {
+		case "-":
+			c.emitOp(code.OpMinus)
+		case "!":
+			c.emitOp(code.OpBang)
 		default:
 			return fmt.Errorf("unknown operator %s", node.Operator)
 		}
 	case *ast.IntegerLiteral: // 对于整型常量值，转化为*object.Integer并保存在常量池中
 		integer := &object.Integer{Value: node.Value}
 		c.emitOp(code.OpConstant, c.pushConstant(integer))
+	case *ast.Boolean:
+		if node.Value {
+			c.emitOp(code.OpTrue)
+		} else {
+			c.emitOp(code.OpFalse)
+		}
 	}
 	return nil
 }
