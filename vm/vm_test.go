@@ -60,6 +60,10 @@ func testObject(t *testing.T, expected interface{}, val object.Object) {
 		if err != nil {
 			t.Errorf("testBooleanObject failed: %s", err)
 		}
+	case *object.Null:
+		if val != Null {
+			t.Errorf("object is not Null: %T (%+v)", val, val)
+		}
 	}
 }
 
@@ -124,6 +128,7 @@ func TestIfExp(t *testing.T) {
 		{"if (true) {10}", 10},
 		{"if (true) {10} else {20}", 10},
 		{"if (1 > 2) {10} else {20}", 20},
+		{"if (1 > 2) {10}", Null},
 	}
 	runTests(t, tests)
 }

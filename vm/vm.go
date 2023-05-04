@@ -13,6 +13,7 @@ const StackSize = 2048
 var (
 	True  = object.TRUE
 	False = object.FALSE
+	Null  = object.NULL
 )
 
 // 栈式虚拟机，包含三个核心部分：常量、指令、栈

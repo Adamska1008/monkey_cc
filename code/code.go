@@ -47,6 +47,7 @@ const (
 	OpPop           // 用于在一个表达式语句之后清空栈
 	OpTrue          // 用于将一个true压栈
 	OpFalse         // 用于将一个false压栈
+	OpNull          // 用于将一个空值压栈
 	OpEqual         // 用于比较栈顶两个元素是否相等，将结果压栈
 	OpNotEqual      // 用于比较栈顶两个元素是否不等，将结果压栈
 	OpLess          // 用于比较栈顶两个元素中，左值是否小于右值，将结果压栈
@@ -98,6 +99,7 @@ var definitions = map[Opcode]*Definition{
 	OpPop:           {"OpPop", []int{}},
 	OpTrue:          {"OpTrue", []int{}},
 	OpFalse:         {"OpFalse", []int{}},
+	OpNull:          {"OpNull", []int{}},
 	OpEqual:         {"OpEqual", []int{}},
 	OpNotEqual:      {"OpNotEqual", []int{}},
 	OpLess:          {"OpLess", []int{}},

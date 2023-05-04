@@ -117,12 +117,12 @@ func (c *Compiler) Compile(node ast.Node) error {
 			// 这是为了使得If中表达式块的数值留在栈中
 			c.removeLastPop()
 		}
+		jumpPos := c.emitOp(code.OpJump, 9999)
+		afterConsequencePos := len(c.instructions)
+		c.changeOperand(jumpNotTruthyPos, afterConsequencePos)
 		if node.Alternative == nil {
-			afterConsequencePos := len(c.instructions)
-			c.changeOperand(jumpNotTruthyPos, afterConsequencePos)
+			c.emitOp(code.OpNull)
 		} else {
-			jumpPos := c.emitOp(code.OpJump, 9999)
-			afterConsequencePos := len(c.instructions)
 			err = c.Compile(node.Alternative)
 			if err != nil {
 				return err
@@ -130,10 +130,9 @@ func (c *Compiler) Compile(node ast.Node) error {
 			if c.lastInstruction.Opcode == code.OpPop {
 				c.removeLastPop()
 			}
-			afterAlternativePos := len(c.instructions)
-			c.changeOperand(jumpPos, afterAlternativePos)
-			c.changeOperand(jumpNotTruthyPos, afterConsequencePos)
 		}
+		afterAlternativePos := len(c.instructions)
+		c.changeOperand(jumpPos, afterAlternativePos)
 	case *ast.IntegerLiteral: // 对于整型常量值，转化为*object.Integer并保存在常量池中
 		integer := &object.Integer{Value: node.Value}
 		c.emitOp(code.OpConstant, c.pushConstant(integer))
