@@ -99,6 +99,16 @@ func (vm *VM) Run() error {
 			}
 		case code.OpPop:
 			vm.pop()
+		case code.OpJumpNotTruthy:
+			operand := int(binary.BigEndian.Uint16(vm.instructions[ip+1:]))
+			ip += 2
+			condition := vm.pop()
+			if !isTruthy(condition) {
+				ip = operand - 1
+			}
+		case code.OpJump:
+			operand := int(binary.BigEndian.Uint16(vm.instructions[ip+1:]))
+			ip = operand - 1
 		}
 	}
 	return nil
@@ -196,5 +206,14 @@ func (vm *VM) executeMinusOperator(op code.Opcode) error {
 		return vm.push(&object.Integer{Value: -operand.Value})
 	default:
 		return fmt.Errorf("unknown operator: %d (%s)", op, operand.Type())
+	}
+}
+
+func isTruthy(obj object.Object) bool {
+	switch obj := obj.(type) {
+	case *object.Boolean:
+		return obj.Value
+	default:
+		return true
 	}
 }

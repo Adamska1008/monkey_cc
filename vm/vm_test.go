@@ -93,6 +93,7 @@ func TestIntegerArithmetic(t *testing.T) {
 		{"2", 2},
 		{"1 + 2", 3},
 		{"-1", -1},
+		{"(1 + 3 * 5) * (-1)", -16},
 	}
 	runTests(t, tests)
 }
@@ -114,6 +115,15 @@ func TestBooleanExp(t *testing.T) {
 		{"(1 < 2) == true", true},
 		{"!true", false},
 		{"!false", true},
+	}
+	runTests(t, tests)
+}
+
+func TestIfExp(t *testing.T) {
+	tests := []vmTest{
+		{"if (true) {10}", 10},
+		{"if (true) {10} else {20}", 10},
+		{"if (1 > 2) {10} else {20}", 20},
 	}
 	runTests(t, tests)
 }
