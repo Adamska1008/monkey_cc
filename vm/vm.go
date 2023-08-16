@@ -8,7 +8,10 @@ import (
 	"monkey_cc/object"
 )
 
-const StackSize = 2048
+const (
+	StackSize  = 2048
+	GlobalSize = 65536
+)
 
 var (
 	True  = object.TRUE
@@ -21,8 +24,9 @@ type VM struct {
 	constants    []object.Object
 	instructions code.Instructions
 
-	stack []object.Object
-	sp    int
+	stack   []object.Object
+	globals []object.Object
+	sp      int
 }
 
 func New(bytecode *compiler.Bytecode) *VM {
@@ -30,8 +34,9 @@ func New(bytecode *compiler.Bytecode) *VM {
 		instructions: bytecode.Instructions,
 		constants:    bytecode.Constants,
 
-		stack: make([]object.Object, StackSize),
-		sp:    -1,
+		stack:   make([]object.Object, StackSize),
+		globals: make([]object.Object, GlobalSize),
+		sp:      -1,
 	}
 }
 
@@ -98,6 +103,11 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
+		case code.OpNull:
+			err := vm.push(Null)
+			if err != nil {
+				return err
+			}
 		case code.OpPop:
 			vm.pop()
 		case code.OpJumpNotTruthy:
@@ -110,6 +120,17 @@ func (vm *VM) Run() error {
 		case code.OpJump:
 			operand := int(binary.BigEndian.Uint16(vm.instructions[ip+1:]))
 			ip = operand - 1
+		case code.OpSetGlobal:
+			globalIdx := int(binary.BigEndian.Uint16(vm.instructions[ip+1:]))
+			ip += 2
+			vm.globals[globalIdx] = vm.pop()
+		case code.OpGetGlobal:
+			globalIdx := int(binary.BigEndian.Uint16(vm.instructions[ip+1:]))
+			ip += 2
+			err := vm.push(vm.globals[globalIdx])
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

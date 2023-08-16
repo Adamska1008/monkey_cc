@@ -132,3 +132,11 @@ func TestIfExp(t *testing.T) {
 	}
 	runTests(t, tests)
 }
+
+func TestGlobalLetStmt(t *testing.T) {
+	tests := []vmTest{
+		{"let one = 1; one", 1},
+		{"let one = 1; let two = 2; one + two", 3},
+	}
+	runTests(t, tests)
+}

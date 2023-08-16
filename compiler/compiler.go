@@ -7,6 +7,37 @@ import (
 	"monkey_cc/object"
 )
 
+type SymbolScope string
+
+const (
+	GlobalScope SymbolScope = "GLOBAL"
+)
+
+type Symbol struct {
+	Name  string
+	Scope SymbolScope
+	Index int
+}
+
+type SymbolTable struct {
+	store map[string]Symbol
+}
+
+func (s *SymbolTable) NumDefinitions() int {
+	return len(s.store)
+}
+
+func (s *SymbolTable) Define(name string) Symbol {
+	symbol := Symbol{Name: name, Scope: GlobalScope, Index: s.NumDefinitions()}
+	s.store[name] = symbol
+	return symbol
+}
+
+func (s *SymbolTable) Resolve(name string) (Symbol, bool) {
+	obj, ok := s.store[name]
+	return obj, ok
+}
+
 type EmittedInstruction struct {
 	Opcode   code.Opcode
 	Position int
@@ -17,6 +48,12 @@ type Compiler struct {
 	constants           []object.Object
 	lastInstruction     EmittedInstruction // 前一个表达式
 	previousInstruction EmittedInstruction // 前两个表达式，仅在回退时使用
+	symbolTable         *SymbolTable
+}
+
+func NewSymbolTable() *SymbolTable {
+	s := make(map[string]Symbol)
+	return &SymbolTable{store: s}
 }
 
 func New() *Compiler {
@@ -25,6 +62,7 @@ func New() *Compiler {
 		constants:           []object.Object{},
 		lastInstruction:     EmittedInstruction{},
 		previousInstruction: EmittedInstruction{},
+		symbolTable:         NewSymbolTable(),
 	}
 }
 
@@ -44,6 +82,13 @@ func (c *Compiler) Compile(node ast.Node) error {
 				return err
 			}
 		}
+	case *ast.LetStatement:
+		err := c.Compile(node.Value)
+		if err != nil {
+			return err
+		}
+		symbol := c.symbolTable.Define(node.Name.Value)
+		c.emitOp(code.OpSetGlobal, symbol.Index)
 	case *ast.ExpressionStatement:
 		err := c.Compile(node.Exp)
 		if err != nil {
@@ -107,6 +152,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if err != nil {
 			return err
 		}
+		// emit jnt，使用9999占位
 		jumpNotTruthyPos := c.emitOp(code.OpJumpNotTruthy, 9999)
 		err = c.Compile(node.Consequence)
 		if err != nil {
@@ -142,6 +188,12 @@ func (c *Compiler) Compile(node ast.Node) error {
 		} else {
 			c.emitOp(code.OpFalse)
 		}
+	case *ast.Identifier:
+		symbol, ok := c.symbolTable.Resolve(node.Value)
+		if !ok {
+			return fmt.Errorf("undefined variable %s", node.Value)
+		}
+		c.emitOp(code.OpGetGlobal, symbol.Index)
 	}
 	return nil
 }

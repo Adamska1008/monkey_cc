@@ -288,3 +288,66 @@ func TestIfExp(t *testing.T) {
 	}
 	runTests(t, tests)
 }
+
+func TestGlobalLetStmt(t *testing.T) {
+	tests := []compilerTest{
+		{
+			input: `let one = 1;
+					let two = 2;`,
+			expectedConstants: []interface{}{1, 2},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpSetGlobal, 1),
+			},
+		},
+		{
+			input: `let one = 1;
+					one;`,
+			expectedConstants: []interface{}{1},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+	runTests(t, tests)
+}
+
+func TestDefine(t *testing.T) {
+	expected := map[string]Symbol{
+		"a": {Name: "a", Scope: GlobalScope, Index: 0},
+		"b": {Name: "b", Scope: GlobalScope, Index: 1},
+	}
+	global := NewSymbolTable()
+	a := global.Define("a")
+	if a != expected["a"] {
+		t.Errorf(NOT_EXPECTED, "a", expected["a"], a)
+	}
+	b := global.Define("b")
+	if b != expected["b"] {
+		t.Errorf(NOT_EXPECTED, "b", expected["b"], b)
+	}
+}
+
+func TestResolveGlobal(t *testing.T) {
+	global := NewSymbolTable()
+	global.Define("a")
+	global.Define("b")
+	expect := []Symbol{
+		{Name: "a", Scope: GlobalScope, Index: 0},
+		{Name: "b", Scope: GlobalScope, Index: 1},
+	}
+	for _, sym := range expect {
+		result, ok := global.Resolve(sym.Name)
+		if !ok {
+			t.Errorf("name %s not resolvable", sym.Name)
+		}
+		if result != sym {
+			t.Errorf(NOT_EXPECTED, sym.Name, sym, result)
+		}
+	}
+}

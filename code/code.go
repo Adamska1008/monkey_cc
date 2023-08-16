@@ -55,6 +55,8 @@ const (
 	OpBang          // 用于栈顶元素取非
 	OpJump          // 无条件跳转
 	OpJumpNotTruthy // 栈顶为False时跳转
+	OpSetGlobal
+	OpGetGlobal
 )
 
 type Definition struct {
@@ -107,6 +109,8 @@ var definitions = map[Opcode]*Definition{
 	OpBang:          {"OpBang", []int{}},
 	OpJump:          {"OpJump", []int{2}},
 	OpJumpNotTruthy: {"OpJumpNotTruthy", []int{2}},
+	OpGetGlobal:     {"OpGetGlobal", []int{2}},
+	OpSetGlobal:     {"OpSetGlobal", []int{2}},
 }
 
 // 查找对应操作码的定义
